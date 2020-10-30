@@ -1,6 +1,6 @@
 from transformers import AutoModelWithLMHead, AutoTokenizer, top_k_top_p_filtering
 import torch
-from flask import Flask, request, Response
+from flask import Flask, request, Response, jsonify
 from torch.nn import functional as F
 from queue import Queue, Empty
 import time
@@ -15,7 +15,7 @@ CHECK_INTERVAL = 0.1
 
 tokenizer = AutoTokenizer.from_pretrained("jonasmue/cover-letter-gpt2")
 model = AutoModelWithLMHead.from_pretrained("jonasmue/cover-letter-gpt2", return_dict=True)
-
+model.to('cuda')
 
 # Queue 핸들링
 def handle_requests_by_batch():
@@ -38,6 +38,8 @@ threading.Thread(target=handle_requests_by_batch).start()
 # Sketch Start
 def run(sequence):
     input_ids = tokenizer.encode(sequence, return_tensors="pt")
+    input_ids = input_ids.to('cuda')
+    
     # get logits of last hidden state
     next_token_logits = model(input_ids).logits[:, -1, :]
     # filter
@@ -52,7 +54,7 @@ def run(sequence):
     return result
 
 
-@app.route("/gpt2-word", methods=['GET'])
+@app.route("/gpt2-cover-word", methods=['GET'])
 def gpt2():
     # 큐에 쌓여있을 경우,
     if requests_queue.qsize() > BATCH_SIZE:
@@ -61,7 +63,6 @@ def gpt2():
     # 웹페이지로부터 이미지와 스타일 정보를 얻어옴.
     try:
         text = request.args['text']
-        print(text)
 
     except Exception:
         print("Empty Text")
