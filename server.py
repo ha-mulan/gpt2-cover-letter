@@ -28,25 +28,25 @@ def handle_requests_by_batch():
                 continue
 
             for requests in requests_batch:
-                requests['output'] = run(requests['input'][0])
+                requests['output'] = run(requests['input'][0], requests['input'][1])
 
 
 # 쓰레드
 threading.Thread(target=handle_requests_by_batch).start()
 
 
-# Sketch Start
-def run(sequence):
+# Running GPT-2
+def run(sequence, num_samples):
     input_ids = tokenizer.encode(sequence, return_tensors="pt")
-    input_ids = input_ids.to('cuda')
+    tokens_tensor = input_ids.to('cuda')
     
     # get logits of last hidden state
-    next_token_logits = model(input_ids).logits[:, -1, :]
+    next_token_logits = model(tokens_tensor).logits[:, -1, :]
     # filter
     filtered_next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=50, top_p=1.0)
     # sample
     probs = F.softmax(filtered_next_token_logits, dim=-1)
-    next_token = torch.multinomial(probs, num_samples=5)
+    next_token = torch.multinomial(probs, num_samples=num_samples)
 
     result = dict()
     for idx, token in enumerate(next_token.tolist()[0]):
@@ -54,7 +54,7 @@ def run(sequence):
     return result
 
 
-@app.route("/gpt2-cover-word", methods=['GET'])
+@app.route("/gpt2-cover-word", methods=['POST'])
 def gpt2():
     # 큐에 쌓여있을 경우,
     if requests_queue.qsize() > BATCH_SIZE:
@@ -62,7 +62,8 @@ def gpt2():
 
     # 웹페이지로부터 이미지와 스타일 정보를 얻어옴.
     try:
-        text = request.args['text']
+        text = request.form['text']
+        num_samples = int(request.form['num_samples'])
 
     except Exception:
         print("Empty Text")
@@ -70,7 +71,7 @@ def gpt2():
 
     # Queue - put data
     req = {
-        'input': [text]
+        'input': [text, num_samples]
     }
     requests_queue.put(req)
 
