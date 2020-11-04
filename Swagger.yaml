@@ -1,0 +1,82 @@
+openapi: 3.0.1
+
+info:
+  title: ainize-gpt2-cover-letter
+  description: |
+      generate cover-letter sentence based fine-tuned gpt2 model
+  contact:
+    name: Ainizer - Jeong Hyunsu
+  version: "2.0"
+  license:
+    name: Apache License 2.0
+    url: https://github.com/huggingface/transformers/blob/master/LICENSE
+
+servers:
+  - url: https://main-gpt2-cover-letter-jeong-hyun-su.endpoint.ainize.ai
+
+paths:
+  /gpt2-cover-letter/short:
+    post:
+      requestBody:
+        required: true
+        description: |
+          Specify a length of the text and set the start prompt for the text to be generated.
+          The length must can be parse to integer
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                num_samples:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Bad Request
+
+        '429':
+          description: Busy to server, please retry again.
+
+        '500':
+          description: Server side error
+
+  /gpt2-cover-letter/long:
+    post:
+      requestBody:
+        required: true
+        description: |
+          Specify a length of the text and set the start prompt for the text to be generated.
+          The length must can be parse to integer
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                num_samples:
+                  type: string
+                length:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Bad Request
+
+        '429':
+          description: Busy to server, please retry again.
+
+        '500':
+          description: Server side error
